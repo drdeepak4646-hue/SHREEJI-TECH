@@ -1,122 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Shree Ji Tech | Enterprise</title>
+<title>Shree Ji Tech</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <style>
-:root{
---red:#ff4d6d;
---green:#22c55e;
---bg:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
---glass:rgba(255,255,255,0.05);
-}
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif}
-body{background:var(--bg);color:white;padding-bottom:120px}
-header{background:rgba(0,0,0,.4);padding:12px;display:flex;justify-content:space-between;align-items:center}
-.logo-area{display:flex;align-items:center;gap:10px}
-.logo-area img{height:50px;width:50px;border-radius:50%;border:2px solid var(--red)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;padding:15px}
-.card{background:var(--glass);padding:15px;border-radius:16px;text-align:center}
-.card img{height:90px;width:100%;object-fit:contain}
-.price{color:var(--green);font-weight:bold;margin:5px 0}
-.btn{background:linear-gradient(45deg,var(--red),#ff758f);border:none;padding:10px;border-radius:10px;color:white;font-weight:bold;margin:4px 0;width:100%;cursor:pointer}
-input{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:none;background:#1e293b;color:white}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center;z-index:999}
-.box{background:#111827;padding:20px;border-radius:16px;width:90%;max-width:400px}
-.order-card{background:#1e293b;padding:10px;border-radius:10px;margin-bottom:10px;font-size:12px}
-.bottom-nav{position:fixed;bottom:0;width:100%;background:rgba(0,0,0,.6);display:flex;justify-content:space-around;padding:12px 0}
-.nav-item{text-align:center;font-size:12px;cursor:pointer}
+body{font-family:Segoe UI;background:#0f2027;color:white;text-align:center}
+.box{background:#1e293b;padding:20px;border-radius:10px;width:300px;margin:20px auto}
+input{width:100%;padding:10px;margin:5px 0;border:none;border-radius:5px}
+button{padding:10px;width:100%;margin:5px 0;background:#ff4d6d;border:none;color:white;border-radius:5px}
 </style>
 </head>
 <body>
 
-<header>
-<div class="logo-area">
-<img src="1000007701.jpg">
-<div>
-<b>SHREE JI TECH</b>
-<p id="welcomeMsg" style="font-size:10px">Welcome Guest</p>
-</div>
-</div>
-<div>
-<button id="logoutBtn" class="btn" style="display:none;background:#444;width:auto" onclick="logoutUser()">Logout</button>
-<button id="addBtn" class="btn" style="display:none;width:auto" onclick="showModal('adminPanel')">➕</button>
-</div>
-</header>
+<h2>Login System</h2>
 
-<div style="padding:10px">
-<input id="searchBox" placeholder="Search Products..." onkeyup="searchProduct()">
-</div>
+<div class="box" id="loginBox">
 
-<div id="loginBox" style="padding:15px;text-align:center">
-<input id="phoneNumber" placeholder="+91XXXXXXXXXX">
+<input id="mobile" value="+91" />
+
 <div id="recaptcha-container"></div>
-<button class="btn" onclick="sendOTP()">Send OTP</button>
-<input id="otpBox" placeholder="Enter OTP">
-<button class="btn" onclick="verifyOTP()">Verify OTP</button>
+
+<button onclick="startLogin()">Continue</button>
+
+<div id="passwordSection" style="display:none">
+<input type="password" id="password" placeholder="Enter Password">
+<button onclick="passwordLogin()">Login</button>
+<button onclick="forgotPassword()">Forgot Password</button>
 </div>
 
-<div class="grid" id="productGrid"></div>
-
-<div id="profileModal" class="modal">
-<div class="box">
-<h3>My Profile</h3>
-<input id="profileName" placeholder="Full Name">
-<input id="profileAddress" placeholder="Address">
-<button class="btn" onclick="saveProfile()">Save</button>
-<button class="btn" style="background:#444" onclick="closeModal('profileModal')">Close</button>
-</div>
+<div id="otpSection" style="display:none">
+<input id="otp" placeholder="Enter OTP">
+<button onclick="verifyOTP()">Verify OTP</button>
 </div>
 
-<div id="adminPanel" class="modal">
-<div class="box">
-<h3>Add / Edit Product</h3>
-<input id="pName" placeholder="Name">
-<input id="pPrice" type="number" placeholder="Price">
-<input id="pImg" placeholder="Image URL">
-<button class="btn" onclick="saveProduct()">Save</button>
-<hr>
-<h3>All Orders</h3>
-<div id="orderList"></div>
-<button class="btn" style="background:#444" onclick="closeModal('adminPanel')">Close</button>
-</div>
+<div id="setPasswordSection" style="display:none">
+<input type="password" id="newPassword" placeholder="Set Password">
+<button onclick="savePassword()">Save Password</button>
 </div>
 
-<div id="buyModal" class="modal">
-<div class="box">
-<h3>Delivery Details</h3>
-<input id="customerName" placeholder="Full Name">
-<input id="customerPhone" placeholder="Mobile Number">
-<input id="customerAddress" placeholder="Full Address">
-<input id="customerCity" placeholder="City">
-<input id="customerPincode" placeholder="Pincode">
-
-<img id="upiQR" style="width:150px;margin:10px auto;display:block">
-
-<button class="btn" onclick="placeCOD()">Cash on Delivery</button>
-<button class="btn" style="background:green" onclick="payOnline()">Pay via UPI</button>
-<button class="btn" style="background:#444" onclick="closeModal('buyModal')">Cancel</button>
-</div>
-</div>
-
-<div id="myOrdersModal" class="modal">
-<div class="box">
-<h3>My Orders</h3>
-<div id="myOrdersList"></div>
-<button class="btn" style="background:#444" onclick="closeModal('myOrdersModal')">Close</button>
-</div>
-</div>
-
-<div class="bottom-nav">
-<div class="nav-item" onclick="location.reload()">🏠<br>Home</div>
-<div class="nav-item" onclick="showMyOrders()">📦<br>Orders</div>
-<div class="nav-item" onclick="openProfile()">👤<br>Profile</div>
 </div>
 
 <script>
@@ -127,246 +53,87 @@ projectId:"shree-4c33e"
 });
 
 const db=firebase.firestore();
-const ADMIN="+917052055713";
-const UPI_ID="dr.deepak2121-2@oksbi";
+let currentMobile=null;
+let confirmationResult=null;
 
-let editId=null;
-let selectedProduct=null;
+window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+'recaptcha-container',
+{size:'normal'}
+);
 
-/* SEARCH */
-function searchProduct(){
-let value=searchBox.value.toLowerCase();
-document.querySelectorAll(".card").forEach(card=>{
-card.style.display=card.innerText.toLowerCase().includes(value)?"block":"none";
-});
+function startLogin(){
+let mobile=document.getElementById("mobile").value;
+
+if(!mobile.startsWith("+91")){
+alert("Mobile must start with +91");
+return;
 }
 
-/* PROFILE */
-function openProfile(){
-let user=localStorage.getItem("userPhone");
-db.collection("users").doc(user).get().then(doc=>{
+currentMobile=mobile;
+
+db.collection("users").doc(mobile).get().then(doc=>{
 if(doc.exists){
-profileName.value=doc.data().name||"";
-profileAddress.value=doc.data().address||"";
+document.getElementById("passwordSection").style.display="block";
+}else{
+sendOTP();
 }
-showModal("profileModal");
 });
 }
-
-function saveProfile(){
-let user=localStorage.getItem("userPhone");
-db.collection("users").doc(user).set({
-name:profileName.value,
-address:profileAddress.value,
-phone:user
-});
-alert("Profile Saved");
-closeModal("profileModal");
-}
-
-/* LOGIN */
-firebase.auth().useDeviceLanguage();
-window.recaptchaVerifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'normal'});
 
 function sendOTP(){
-firebase.auth().signInWithPhoneNumber(phoneNumber.value,window.recaptchaVerifier)
-.then(res=>{window.confirmationResult=res;alert("OTP Sent");})
+firebase.auth().signInWithPhoneNumber(currentMobile,window.recaptchaVerifier)
+.then(result=>{
+confirmationResult=result;
+document.getElementById("otpSection").style.display="block";
+})
 .catch(e=>alert(e.message));
 }
 
 function verifyOTP(){
-confirmationResult.confirm(otpBox.value)
-.then(res=>{
-localStorage.setItem("userPhone",res.user.phoneNumber);
-location.reload();
-});
-}
-
-/* LOAD PRODUCTS */
-function loadData(){
-let user=localStorage.getItem("userPhone");
-if(user){
-welcomeMsg.innerText="Logged in: "+user;
-loginBox.style.display="none";
-logoutBtn.style.display="block";
-if(user===ADMIN){addBtn.style.display="block";loadOrders();}
-}
-
-db.collection("products").onSnapshot(s=>{
-productGrid.innerHTML="";
-s.forEach(doc=>{
-let p=doc.data();
-let buttons=user===ADMIN?
-`<button class="btn" onclick="editProduct('${doc.id}','${p.name}',${p.price},'${p.img}')">Edit</button>
-<button class="btn" style="background:#000" onclick="deleteProduct('${doc.id}')">Delete</button>`
-:`<button class="btn" onclick="openBuy('${doc.id}')">Buy Now</button>`;
-
-productGrid.innerHTML+=`
-<div class="card">
-<img src="${p.img||''}">
-<p>${p.name}</p>
-<div class="price">₹${p.price}</div>
-${buttons}
-</div>`;
-});
-});
-}
-
-/* BUY */
-function openBuy(id){
-db.collection("products").doc(id).get().then(doc=>{
-selectedProduct={id:doc.id,...doc.data()};
-generateQR();
-showModal("buyModal");
-});
-}
-
-function generateQR(){
-let upiLink=`upi://pay?pa=${UPI_ID}&pn=Shree%20Ji%20Tech&am=${selectedProduct.price}&cu=INR`;
-upiQR.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiLink)}`;
-}
-
-function placeCOD(){
-saveOrder("COD","Pending");
-alert("Order Placed");
-closeModal("buyModal");
-}
-
-function payOnline(){
-let upiLink=`upi://pay?pa=${UPI_ID}&pn=Shree%20Ji%20Tech&am=${selectedProduct.price}&cu=INR`;
-window.location.href=upiLink;
-
-setTimeout(()=>{
-if(confirm("Have you completed payment?")){
-saveOrder("UPI","Verification Pending");
-alert("Order Submitted for Verification");
-closeModal("buyModal");
-}
-},4000);
-}
-
-function saveOrder(payment,status){
-let orderId="ORD"+Date.now();
-let deliveryDate=new Date();
-deliveryDate.setDate(deliveryDate.getDate()+5);
-
-db.collection("orders").add({
-orderId,
-user:localStorage.getItem("userPhone"),
-product:selectedProduct.name,
-price:selectedProduct.price,
-customerName:customerName.value,
-phone:customerPhone.value,
-address:customerAddress.value,
-city:customerCity.value,
-pincode:customerPincode.value,
-payment,
-status,
-deliveryDate:deliveryDate.toDateString(),
-date:Date.now()
-});
-}
-
-/* ADMIN */
-function loadOrders(){
-db.collection("orders").onSnapshot(s=>{
-orderList.innerHTML="";
-let revenue=0,count=0;
-
-s.forEach(doc=>{
-let o=doc.data();
-count++;
-if(o.status==="Paid"||o.status==="Delivered") revenue+=Number(o.price);
-
-orderList.innerHTML+=`
-<div class="order-card">
-🆔 ${o.orderId}<br>
-👤 ${o.customerName}<br>
-📦 ${o.product}<br>
-💰 ₹${o.price}<br>
-💳 ${o.payment}<br>
-Status: ${o.status}<br>
-<select onchange="updateStatus('${doc.id}',this.value)">
-<option ${o.status==="Pending"?"selected":""}>Pending</option>
-<option ${o.status==="Verification Pending"?"selected":""}>Verification Pending</option>
-<option ${o.status==="Paid"?"selected":""}>Paid</option>
-<option ${o.status==="Shipped"?"selected":""}>Shipped</option>
-<option ${o.status==="Delivered"?"selected":""}>Delivered</option>
-<option ${o.status==="Cancelled"?"selected":""}>Cancelled</option>
-</select>
-</div>`;
-});
-
-orderList.innerHTML=`<h4>Total Orders: ${count}</h4>
-<h4>Total Revenue: ₹${revenue}</h4><hr>`+orderList.innerHTML;
-});
-}
-
-function updateStatus(id,status){
-db.collection("orders").doc(id).update({status});
-}
-
-/* PRODUCT CRUD */
-function saveProduct(){
-if(editId){
-db.collection("products").doc(editId).update({
-name:pName.value,
-price:Number(pPrice.value),
-img:pImg.value
-}).then(()=>{editId=null;closeModal("adminPanel");});
+confirmationResult.confirm(document.getElementById("otp").value)
+.then(()=>{
+db.collection("users").doc(currentMobile).get().then(doc=>{
+if(doc.exists){
+document.getElementById("setPasswordSection").style.display="none";
+alert("Verified. Please login with password.");
 }else{
-db.collection("products").add({
-name:pName.value,
-price:Number(pPrice.value),
-img:pImg.value,
-date:Date.now()
-}).then(()=>closeModal("adminPanel"));
+document.getElementById("setPasswordSection").style.display="block";
 }
-}
-
-function editProduct(id,name,price,img){
-editId=id;
-pName.value=name;
-pPrice.value=price;
-pImg.value=img;
-showModal("adminPanel");
-}
-
-function deleteProduct(id){
-if(confirm("Delete?")) db.collection("products").doc(id).delete();
-}
-
-/* MY ORDERS */
-function showMyOrders(){
-let user=localStorage.getItem("userPhone");
-db.collection("orders").where("user","==",user)
-.onSnapshot(s=>{
-myOrdersList.innerHTML="";
-s.forEach(doc=>{
-let o=doc.data();
-myOrdersList.innerHTML+=`
-<div class="order-card">
-🆔 ${o.orderId}<br>
-📦 ${o.product}<br>
-💰 ₹${o.price}<br>
-🚚 ${o.deliveryDate}<br>
-Status: ${o.status}
-</div>`;
 });
 });
-showModal("myOrdersModal");
 }
 
-function logoutUser(){
-localStorage.removeItem("userPhone");
-firebase.auth().signOut();
+function savePassword(){
+let pass=document.getElementById("newPassword").value;
+
+db.collection("users").doc(currentMobile).set({
+mobile:currentMobile,
+password:pass
+});
+
+alert("Password Saved. Login Again.");
 location.reload();
 }
 
-function showModal(id){document.getElementById(id).style.display="flex"}
-function closeModal(id){document.getElementById(id).style.display="none"}
+function passwordLogin(){
+let pass=document.getElementById("password").value;
 
-window.onload=loadData;
+db.collection("users").doc(currentMobile).get().then(doc=>{
+if(doc.exists && doc.data().password===pass){
+alert("Login Successful");
+localStorage.setItem("user",currentMobile);
+location.reload();
+}else{
+alert("Wrong Password");
+}
+});
+}
+
+function forgotPassword(){
+sendOTP();
+document.getElementById("setPasswordSection").style.display="block";
+}
 </script>
+
 </body>
 </html>
