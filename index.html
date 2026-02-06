@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shree Radhe Tech | Tech Store</title>
+    <style>
+        :root {
+            --yellow: #ffdb00;
+            --red: #e63946;
+            --black: #121212;
+            --white: #ffffff;
+            --grey: #f4f4f4;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--grey); overflow-x: hidden; }
+
+        /* HEADER - App Look */
+        header {
+            background: var(--black);
+            padding: 10px 15px;
+            display: flex;
+            flex-direction: column;
+            position: sticky; top: 0; z-index: 1000;
+            border-bottom: 3px solid var(--red);
+        }
+
+        .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px; }
+        
+        .logo-area { display: flex; align-items: center; text-decoration: none; }
+        .logo-img {
+            height: 45px; width: 45px; 
+            background: white; border-radius: 50%; 
+            padding: 2px; border: 2px solid var(--yellow);
+            object-fit: cover; margin-right: 10px;
+        }
+        .logo-text h1 { color: var(--yellow); font-size: 18px; font-weight: 900; }
+        .logo-text span { color: var(--red); }
+
+        .search-bar { width: 100%; display: flex; }
+        .search-bar input {
+            flex: 1; padding: 10px; border: none; border-radius: 4px 0 0 4px; outline: none; font-size: 14px;
+        }
+        .search-bar button {
+            background: var(--yellow); border: none; padding: 0 15px;
+            border-radius: 0 4px 4px 0; font-weight: bold;
+        }
+
+        /* CATEGORY SCROLL */
+        .cat-nav {
+            background: white; display: flex; overflow-x: auto;
+            padding: 15px; gap: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            scrollbar-width: none;
+        }
+        .cat-nav::-webkit-scrollbar { display: none; }
+        .cat-item { text-align: center; min-width: 80px; cursor: pointer; }
+        .cat-item div { 
+            width: 50px; height: 50px; background: #eee; border-radius: 50%; 
+            margin: 0 auto 5px; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; border: 1px solid var(--yellow);
+        }
+        .cat-item p { font-size: 11px; font-weight: bold; text-transform: uppercase; }
+
+        /* PROMO BANNER */
+        .banner {
+            background: linear-gradient(45deg, var(--black), var(--red));
+            margin: 10px; border-radius: 8px; padding: 30px 20px;
+            text-align: center; color: var(--yellow);
+        }
+
+        /* PRODUCT GRID */
+        .container { padding: 10px; }
+        .section-head { display: flex; justify-content: space-between; margin: 10px 5px; }
+        
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        .card {
+            background: white; padding: 10px; border-radius: 8px;
+            text-align: center; border: 1px solid #ddd;
+        }
+        .card img { height: 120px; width: 100%; object-fit: contain; }
+        .card h3 { font-size: 13px; margin: 8px 0; height: 32px; overflow: hidden; color: #333; }
+        .price { color: var(--red); font-weight: bold; font-size: 16px; margin-bottom: 8px; }
+        
+        .add-btn {
+            background: var(--yellow); color: var(--black); border: 1px solid var(--black);
+            width: 100%; padding: 8px; border-radius: 4px; font-weight: bold; font-size: 12px;
+        }
+
+        /* BOTTOM NAV - Mobile App Look */
+        .bottom-nav {
+            position: fixed; bottom: 0; width: 100%; background: var(--black);
+            display: flex; justify-content: space-around; padding: 10px;
+            border-top: 2px solid var(--yellow); z-index: 1000;
+        }
+        .nav-icon { color: white; text-align: center; font-size: 12px; cursor: pointer; }
+        .nav-icon.active { color: var(--yellow); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="top-row">
+            <div class="logo-area">
+                <img src="1000007701.jpg" alt="Logo" class="logo-img">
+                <div class="logo-text"><h1>SHREE RADHE<span>ACCS</span></h1></div>
+            </div>
+            <div style="color: white; font-size: 20px;">🛒 <span id="cartCount" style="background:var(--red); padding:2px 6px; border-radius:50%; font-size:12px;">0</span></div>
+        </div>
+        <div class="search-bar">
+            <input type="text" placeholder="Search Mobile, Laptop Accessories..." onkeyup="search()">
+            <button>🔍</button>
+        </div>
+    </header>
+
+    <div class="cat-nav">
+        <div class="cat-item" onclick="filter('All')"><div>📱</div><p>All</p></div>
+        <div class="cat-item" onclick="filter('Mobile')"><div>🔋</div><p>Mobile</p></div>
+        <div class="cat-item" onclick="filter('Laptop')"><div>💻</div><p>Laptop</p></div>
+        <div class="cat-item"><div>🎧</div><p>Audio</p></div>
+        <div class="cat-item"><div>⌚</div><p>Watches</p></div>
+    </div>
+
+    <div class="banner">
+        <h2 style="font-size: 24px;">OFFER KA DHAMAKA!</h2>
+        <p>Sabse Saste Laptop Covers & Chargers</p>
+    </div>
+
+    <div class="container">
+        <div class="section-head">
+            <h3 style="border-left: 4px solid var(--red); padding-left: 10px;">Hot Deals</h3>
+            <span style="color:var(--red); font-size: 12px; font-weight:bold;">VIEW ALL</span>
+        </div>
+        <div class="grid" id="pGrid"></div>
+    </div>
+
+    <div style="height: 70px;"></div> <div class="bottom-nav">
+        <div class="nav-icon active">🏠<br>Home</div>
+        <div class="nav-icon">📂<br>Categories</div>
+        <div class="nav-icon">👤<br>Account</div>
+        <div class="nav-icon" onclick="alert('WhatsApp Order feature coming soon!')">📞<br>Order</div>
+    </div>
+
+    <script>
+        const products = [
+            { id: 1, name: "Fast Type-C Charger", price: 499, cat: "Mobile", img: "https://m.media-amazon.com/images/I/51fMdfA76rL._AC_UY218_.jpg" },
+            { id: 2, name: "Gaming Mouse RGB", price: 799, cat: "Laptop", img: "https://m.media-amazon.com/images/I/61UuS7O68eL._AC_UY218_.jpg" },
+            { id: 3, name: "Heavy Duty Laptop Stand", price: 999, cat: "Laptop", img: "https://m.media-amazon.com/images/I/61NfC98H6XL._AC_UY218_.jpg" },
+            { id: 4, name: "Tempered Glass (All Models)", price: 99, cat: "Mobile", img: "https://m.media-amazon.com/images/I/610pghkO81L._AC_UY218_.jpg" }
+        ];
+
+        let cart = 0;
+        function render(items) {
+            document.getElementById('pGrid').innerHTML = items.map(p => `
+                <div class="card">
+                    <img src="${p.img}">
+                    <h3>${p.name}</h3>
+                    <p class="price">₹${p.price}</p>
+                    <button class="add-btn" onclick="add()">ADD TO CART</button>
+                </div>
+            `).join('');
+        }
+
+        function add() { cart++; document.getElementById('cartCount').innerText = cart; }
+        
+        function filter(c) {
+            if(c === 'All') render(products);
+            else render(products.filter(p => p.cat === c));
+        }
+
+        render(products);
+    </script>
+</body>
+</html>
