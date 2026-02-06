@@ -1,49 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Shree Ji Tech</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shree Ji Tech | Enterprise</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <style>
-body{font-family:Segoe UI;background:#0f2027;color:white;text-align:center}
-.box{background:#1e293b;padding:20px;border-radius:10px;width:300px;margin:20px auto}
-input{width:100%;padding:10px;margin:5px 0;border:none;border-radius:5px}
-button{padding:10px;width:100%;margin:5px 0;background:#ff4d6d;border:none;color:white;border-radius:5px}
+:root{
+--red:#ff4d6d;
+--green:#22c55e;
+--bg:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+--glass:rgba(255,255,255,0.05);
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif}
+body{background:var(--bg);color:white;padding-bottom:100px}
+header{background:rgba(0,0,0,.4);padding:12px;display:flex;justify-content:space-between;align-items:center}
+.logo-area{display:flex;align-items:center;gap:10px}
+.logo-area img{height:50px;width:50px;border-radius:50%;border:2px solid var(--red)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;padding:15px}
+.card{background:var(--glass);padding:15px;border-radius:16px;text-align:center}
+.card img{height:90px;width:100%;object-fit:contain}
+.price{color:var(--green);font-weight:bold;margin:5px 0}
+.btn{background:linear-gradient(45deg,var(--red),#ff758f);border:none;padding:10px;border-radius:10px;color:white;font-weight:bold;margin:4px 0;width:100%;cursor:pointer}
+input{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:none;background:#1e293b;color:white}
+.order-card{background:#1e293b;padding:10px;border-radius:10px;margin-bottom:10px;font-size:12px}
 </style>
 </head>
 <body>
 
-<h2>Login System</h2>
+<header>
+<div class="logo-area">
+<img src="1000007701.jpg">
+<div>
+<b>SHREE JI TECH</b>
+<p id="welcomeMsg" style="font-size:10px">Welcome Guest</p>
+</div>
+</div>
+<div>
+<button id="logoutBtn" class="btn" style="display:none;background:#444;width:auto" onclick="logoutUser()">Logout</button>
+</div>
+</header>
 
-<div class="box" id="loginBox">
+<!-- LOGIN BOX -->
+<div id="loginBox" style="position:fixed;top:10px;right:10px;width:270px;background:#111827;padding:15px;border-radius:10px;z-index:1000">
 
-<input id="mobile" value="+91" />
+<h4>Email Login</h4>
+<input id="email" placeholder="Email">
+<input id="emailPass" type="password" placeholder="Password">
+<button class="btn" onclick="emailLogin()">Login / Signup</button>
 
+<hr>
+
+<h4>Mobile Login</h4>
+<input id="phone" value="+91" onfocus="if(this.value=='+91')this.setSelectionRange(3,3)">
+<input id="phonePass" type="password" placeholder="Password (after OTP)">
 <div id="recaptcha-container"></div>
-
-<button onclick="startLogin()">Continue</button>
-
-<div id="passwordSection" style="display:none">
-<input type="password" id="password" placeholder="Enter Password">
-<button onclick="passwordLogin()">Login</button>
-<button onclick="forgotPassword()">Forgot Password</button>
-</div>
-
-<div id="otpSection" style="display:none">
-<input id="otp" placeholder="Enter OTP">
-<button onclick="verifyOTP()">Verify OTP</button>
-</div>
-
-<div id="setPasswordSection" style="display:none">
-<input type="password" id="newPassword" placeholder="Set Password">
-<button onclick="savePassword()">Save Password</button>
-</div>
+<button class="btn" onclick="mobileLogin()">Continue</button>
 
 </div>
+
+<div class="grid" id="productGrid"></div>
 
 <script>
 firebase.initializeApp({
@@ -53,85 +73,193 @@ projectId:"shree-4c33e"
 });
 
 const db=firebase.firestore();
-let currentMobile=null;
+const ADMIN="admin@gmail.com";
+
+let currentUser=null;
+let selectedProduct=null;
 let confirmationResult=null;
 
-window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
-'recaptcha-container',
-{size:'normal'}
-);
+/* AUTH STATE */
+firebase.auth().onAuthStateChanged(user=>{
+if(user){
+currentUser=user.email;
+loginBox.style.display="none";
+logoutBtn.style.display="block";
 
-function startLogin(){
-let mobile=document.getElementById("mobile").value;
+let display=user.email.includes("@shreeji.com")
+? "+91"+user.email.replace("@shreeji.com","")
+: user.email;
 
-if(!mobile.startsWith("+91")){
-alert("Mobile must start with +91");
-return;
+welcomeMsg.innerText="Logged in: "+display;
 }
+loadProducts();
+});
 
-currentMobile=mobile;
+/* EMAIL LOGIN */
+function emailLogin(){
+let em=email.value.trim();
+let pw=emailPass.value.trim();
 
-db.collection("users").doc(mobile).get().then(doc=>{
-if(doc.exists){
-document.getElementById("passwordSection").style.display="block";
+firebase.auth().fetchSignInMethodsForEmail(em)
+.then(methods=>{
+if(methods.length===0){
+firebase.auth().createUserWithEmailAndPassword(em,pw)
+.catch(e=>alert(e.message));
 }else{
-sendOTP();
+firebase.auth().signInWithEmailAndPassword(em,pw)
+.catch(()=>alert("Wrong Password"));
 }
 });
 }
 
-function sendOTP(){
-firebase.auth().signInWithPhoneNumber(currentMobile,window.recaptchaVerifier)
+/* MOBILE LOGIN */
+window.recaptchaVerifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'normal'});
+
+function mobileLogin(){
+
+let ph=phone.value.trim();
+
+if(!ph.startsWith("+91")||ph.length<13){
+alert("Enter valid number");
+return;
+}
+
+let number=ph.replace("+91","");
+let emailId=number+"@shreeji.com";
+
+firebase.auth().fetchSignInMethodsForEmail(emailId)
+.then(methods=>{
+if(methods.length===0){
+firstTimeOTP(ph,emailId);
+}else{
+passwordLogin(emailId);
+}
+});
+}
+
+function firstTimeOTP(ph,emailId){
+firebase.auth().signInWithPhoneNumber(ph,window.recaptchaVerifier)
 .then(result=>{
 confirmationResult=result;
-document.getElementById("otpSection").style.display="block";
+let otp=prompt("Enter OTP");
+if(!otp)return;
+
+confirmationResult.confirm(otp).then(()=>{
+let newPass=prompt("Set Password");
+if(!newPass)return;
+
+firebase.auth().createUserWithEmailAndPassword(emailId,newPass)
+.then(()=>{
+alert("Password Saved. Login Again.");
+firebase.auth().signOut();
+});
+});
 })
 .catch(e=>alert(e.message));
 }
 
-function verifyOTP(){
-confirmationResult.confirm(document.getElementById("otp").value)
-.then(()=>{
-db.collection("users").doc(currentMobile).get().then(doc=>{
-if(doc.exists){
-document.getElementById("setPasswordSection").style.display="none";
-alert("Verified. Please login with password.");
-}else{
-document.getElementById("setPasswordSection").style.display="block";
-}
-});
-});
-}
+function passwordLogin(emailId){
+let pw=phonePass.value.trim();
 
-function savePassword(){
-let pass=document.getElementById("newPassword").value;
-
-db.collection("users").doc(currentMobile).set({
-mobile:currentMobile,
-password:pass
-});
-
-alert("Password Saved. Login Again.");
-location.reload();
-}
-
-function passwordLogin(){
-let pass=document.getElementById("password").value;
-
-db.collection("users").doc(currentMobile).get().then(doc=>{
-if(doc.exists && doc.data().password===pass){
-alert("Login Successful");
-localStorage.setItem("user",currentMobile);
-location.reload();
+firebase.auth().signInWithEmailAndPassword(emailId,pw)
+.catch(()=>{
+if(confirm("Wrong password. Reset via OTP?")){
+resetPassword(emailId);
 }else{
 alert("Wrong Password");
 }
 });
 }
 
-function forgotPassword(){
-sendOTP();
-document.getElementById("setPasswordSection").style.display="block";
+function resetPassword(emailId){
+let ph=phone.value.trim();
+
+firebase.auth().signInWithPhoneNumber(ph,window.recaptchaVerifier)
+.then(result=>{
+confirmationResult=result;
+let otp=prompt("Enter OTP");
+if(!otp)return;
+
+confirmationResult.confirm(otp).then(()=>{
+let newPass=prompt("New Password");
+firebase.auth().currentUser.updatePassword(newPass)
+.then(()=>{
+alert("Password Updated");
+firebase.auth().signOut();
+});
+});
+});
+}
+
+/* LOGOUT */
+function logoutUser(){
+firebase.auth().signOut();
+location.reload();
+}
+
+/* PRODUCTS */
+function loadProducts(){
+db.collection("products").onSnapshot(s=>{
+productGrid.innerHTML="";
+s.forEach(doc=>{
+let p=doc.data();
+
+let btn="";
+if(currentUser===ADMIN){
+btn=`<button class="btn" onclick="deleteProduct('${doc.id}')">Delete</button>`;
+}else{
+btn=`<button class="btn" onclick="buyProduct('${doc.id}',${p.stock||0})">Buy</button>
+<p>Stock: ${p.stock||0}</p>`;
+}
+
+productGrid.innerHTML+=`
+<div class="card">
+<img src="${p.img||''}">
+<p>${p.name}</p>
+<div class="price">₹${p.price}</div>
+${btn}
+</div>`;
+});
+});
+}
+
+function buyProduct(id,stock){
+
+if(currentUser===ADMIN){
+alert("Admin cannot buy");
+return;
+}
+
+if(stock<=0){
+alert("Out of stock");
+return;
+}
+
+db.collection("products").doc(id).get().then(doc=>{
+selectedProduct={id:doc.id,...doc.data()};
+placeOrder();
+});
+}
+
+function placeOrder(){
+db.collection("orders").add({
+orderId:"ORD"+Date.now(),
+user:currentUser,
+product:selectedProduct.name,
+price:selectedProduct.price,
+status:"Pending",
+date:Date.now()
+});
+
+db.collection("products").doc(selectedProduct.id)
+.update({stock:firebase.firestore.FieldValue.increment(-1)});
+
+alert("Order Placed");
+}
+
+/* ADMIN DELETE */
+function deleteProduct(id){
+db.collection("products").doc(id).delete();
 }
 </script>
 
