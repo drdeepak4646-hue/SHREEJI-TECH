@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Shree Radhe Tech | In-App Ordering</title>
+    <title>Shree Radhe Tech | Pro Store</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
@@ -11,67 +11,92 @@
     <style>
         :root { --yellow: #ffdb00; --red: #e63946; --black: #121212; --white: #ffffff; --grey: #f4f4f4; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: var(--grey); padding-bottom: 90px; }
+        body { background-color: var(--grey); padding-bottom: 100px; }
 
         header { background: var(--black); padding: 12px 15px; position: sticky; top: 0; z-index: 1000; border-bottom: 3px solid var(--red); display: flex; justify-content: space-between; align-items: center; }
         .logo-text h1 { color: var(--yellow); font-size: 16px; font-weight: 900; }
         .logo-text span { color: var(--red); }
 
-        .auth-zone { display: flex; align-items: center; gap: 10px; }
-        .login-btn-top { background: var(--red); color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; }
+        /* SEARCH & FILTER */
+        .search-container { background: white; padding: 10px; display: flex; gap: 5px; }
+        .search-bar { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 5px; outline: none; }
+        .filter-scroll { display: flex; overflow-x: auto; padding: 10px; gap: 10px; background: white; border-bottom: 1px solid #eee; }
+        .filter-chip { background: #eee; padding: 5px 15px; border-radius: 20px; font-size: 12px; white-space: nowrap; cursor: pointer; }
+        .filter-chip.active { background: var(--red); color: white; }
 
+        /* MODALS */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
-        .box { background: white; padding: 25px; width: 90%; max-width: 400px; border-radius: 15px; position: relative; max-height: 80vh; overflow-y: auto; }
+        .box { background: white; padding: 20px; width: 90%; max-width: 400px; border-radius: 15px; position: relative; max-height: 85vh; overflow-y: auto; }
         
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; font-size: 14px; }
         .btn-main { width: 100%; padding: 12px; background: var(--black); color: white; font-weight: bold; border: none; border-radius: 8px; margin-top: 15px; cursor: pointer; }
 
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
-        .card { background: white; padding: 12px; border-radius: 12px; text-align: center; border: 1px solid #eee; }
-        .card img { height: 110px; width: 100%; object-fit: contain; }
-        .add-btn { background: var(--yellow); border: none; width: 100%; padding: 7px; font-weight: bold; border-radius: 5px; margin-top: 8px; cursor: pointer; }
+        /* GRID */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
+        .card { background: white; padding: 10px; border-radius: 12px; text-align: center; border: 1px solid #eee; }
+        .card img { height: 100px; width: 100%; object-fit: contain; }
+        .add-btn { background: var(--yellow); border: none; width: 100%; padding: 7px; font-weight: bold; border-radius: 5px; margin-top: 8px; cursor: pointer; font-size: 11px; }
 
         .bottom-nav { position: fixed; bottom: 0; width: 100%; background: var(--black); display: flex; justify-content: space-around; padding: 12px; border-top: 2px solid var(--yellow); }
         .nav-icon { color: white; text-align: center; font-size: 11px; cursor: pointer; }
-        
-        .order-log { border-bottom: 1px solid #ddd; padding: 10px 0; font-size: 12px; }
-        .success-animation { color: green; font-weight: bold; text-align: center; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="logo-text"><h1>SHREE RADHE<span>TECH</span></h1></div>
-        <div class="auth-zone">
-            <div id="adminBtn" style="display:none;" onclick="toggleAdmin()"><span style="background:green; color:white; padding:3px 8px; border-radius:5px; font-size:10px;">ADMIN</span></div>
-            <div id="userDisplay"><button class="login-btn-top" onclick="showLogin()">Login</button></div>
+        <div class="logo-text"><h1>SHREE RADHE<span>PRO</span></h1></div>
+        <div class="auth-zone" style="display:flex; gap:10px; align-items:center;">
+            <div id="adminBtn" style="display:none;" onclick="toggleAdmin()"><span style="background:green; color:white; padding:3px 8px; border-radius:5px; font-size:10px; cursor:pointer;">ADMIN</span></div>
+            <div id="userDisplay"><button style="background:var(--red); color:white; border:none; padding:4px 10px; border-radius:15px; font-size:11px;" onclick="showLogin()">Login</button></div>
         </div>
     </header>
 
-    <div id="successModal" class="modal">
-        <div class="box" style="text-align:center;">
-            <h1 style="font-size:50px;">✅</h1>
-            <h2>Order Placed!</h2>
-            <p>Aapka order Shree Radhe Tech ko mil gaya hai.</p>
-            <button class="btn-main" onclick="closeModal('successModal')">Continue Shopping</button>
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Search accessories..." oninput="searchProducts()">
+    </div>
+    <div class="filter-scroll">
+        <div class="filter-chip active" onclick="filterCat('All', this)">All</div>
+        <div class="filter-chip" onclick="filterCat('Charger', this)">Chargers</div>
+        <div class="filter-chip" onclick="filterCat('Cover', this)">Covers</div>
+        <div class="filter-chip" onclick="filterCat('Earphone', this)">Audio</div>
+        <div class="filter-chip" onclick="filterCat('Glass', this)">Glass</div>
+    </div>
+
+    <div id="checkoutModal" class="modal">
+        <div class="box">
+            <span onclick="closeModal('checkoutModal')" style="position:absolute; right:15px; top:10px; font-size:24px; cursor:pointer;">&times;</span>
+            <h3 style="border-bottom:2px solid var(--yellow); padding-bottom:5px;">Checkout</h3>
+            <p style="font-size:12px; margin-top:10px;"><b>Delivery Address:</b></p>
+            <textarea id="orderAddress" rows="3" placeholder="Ghar ka pata, Landmark aur City likhein..."></textarea>
+            
+            <p style="font-size:12px; margin-top:10px;"><b>Payment Method:</b></p>
+            <select id="paymentMethod">
+                <option value="Online (UPI)">PhonePe / Google Pay</option>
+                <option value="COD">Cash on Delivery</option>
+            </select>
+            
+            <div id="cartSummary" style="margin-top:15px; background:#f9f9f9; padding:10px; font-size:13px; border-radius:8px;"></div>
+            <button class="btn-main" onclick="confirmFinalOrder()" style="background:var(--red);">CONFIRM ORDER</button>
         </div>
     </div>
 
     <div id="adminModal" class="modal">
         <div class="box">
             <span onclick="closeModal('adminModal')" style="position:absolute; right:15px; top:10px; font-size:24px; cursor:pointer;">&times;</span>
-            <h3 style="color:var(--red);">Admin Panel</h3>
-            <div style="margin-top:15px; border:1px solid #eee; padding:10px; border-radius:10px;">
-                <p><b>Add Product:</b></p>
-                <input type="text" id="pName" placeholder="Name">
+            <h3>Admin Panel</h3>
+            <div style="background:#f4f4f4; padding:10px; border-radius:10px; margin-top:10px;">
+                <input type="text" id="pName" placeholder="Product Name">
                 <input type="number" id="pPrice" placeholder="Price">
-                <input type="text" id="pImg" placeholder="Image Link">
-                <button class="btn-main" onclick="saveNewItem()">Add Item</button>
+                <select id="pCat">
+                    <option value="Charger">Charger</option>
+                    <option value="Cover">Cover</option>
+                    <option value="Earphone">Earphone</option>
+                    <option value="Glass">Glass</option>
+                </select>
+                <input type="text" id="pImg" placeholder="Direct Image Link">
+                <button class="btn-main" onclick="saveItem()">Add Product</button>
             </div>
-            <div style="margin-top:20px;">
-                <p><b>Recent Orders (Received on Web):</b></p>
-                <div id="orderHistory">No orders yet.</div>
-            </div>
+            <div id="orderLogs" style="margin-top:20px; font-size:11px;"></div>
         </div>
     </div>
 
@@ -95,8 +120,8 @@
 
     <div class="bottom-nav">
         <div class="nav-icon" onclick="location.reload()">🏠<br>Home</div>
-        <div class="nav-icon" onclick="alert('Items in cart: ' + cart.length)">🛒<br>Cart (<span id="count">0</span>)</div>
-        <div class="nav-icon" onclick="placeOrderWeb()" style="color:var(--yellow); font-weight:bold;">📦<br>Place Order</div>
+        <div class="nav-icon" onclick="openCheckout()">🛒<br>Cart (<span id="count">0</span>)</div>
+        <div class="nav-icon" onclick="openCheckout()" style="color:var(--yellow); font-weight:bold;">📦<br>Checkout</div>
     </div>
 
     <script>
@@ -111,110 +136,106 @@
         firebase.initializeApp(firebaseConfig);
 
         const ADMIN_NO = "+917052055713";
-        let items = JSON.parse(localStorage.getItem('web_products')) || [
-            { id: 1, name: "Fast Charger", price: 499, img: "https://m.media-amazon.com/images/I/51fMdfA76rL._AC_UY218_.jpg" }
-        ];
+        let products = JSON.parse(localStorage.getItem('shree_v3_products')) || [];
         let cart = [];
-        let confirmation;
+        let currentFilter = "All";
 
         window.onload = () => {
             render();
-            updateUI();
-            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
+            updateAuth();
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size': 'invisible'});
         };
 
-        function render() {
-            document.getElementById('productGrid').innerHTML = items.map(p => `
+        function render(data = products) {
+            const filtered = currentFilter === "All" ? data : data.filter(p => p.cat === currentFilter);
+            document.getElementById('productGrid').innerHTML = filtered.map(p => `
                 <div class="card">
                     <img src="${p.img}">
-                    <p style="font-size:12px; height:35px;">${p.name}</p>
-                    <p style="color:red; font-weight:bold;">₹${p.price}</p>
+                    <p style="font-size:11px; height:32px; overflow:hidden; margin-top:5px;">${p.name}</p>
+                    <p style="color:red; font-weight:bold; font-size:14px;">₹${p.price}</p>
                     <button class="add-btn" onclick="addToCart('${p.name}', ${p.price})">ADD TO CART</button>
                 </div>
             `).join('');
         }
 
-        function updateUI() {
-            const user = localStorage.getItem('web_user');
-            if(user) {
-                document.getElementById('userDisplay').innerHTML = `<span style="color:var(--yellow); font-size:11px;">${user.slice(-10)}</span>`;
-                if(user === ADMIN_NO) document.getElementById('adminBtn').style.display = 'block';
-            }
+        // --- SEARCH & FILTER ---
+        function searchProducts() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = products.filter(p => p.name.toLowerCase().includes(term));
+            render(filtered);
         }
 
-        // --- WEB ORDERING LOGIC ---
-        function placeOrderWeb() {
+        function filterCat(cat, el) {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            currentFilter = cat;
+            render();
+        }
+
+        // --- CHECKOUT LOGIC ---
+        function openCheckout() {
             const user = localStorage.getItem('web_user');
             if(!user) return showLogin();
-            if(cart.length === 0) return alert("Cart is empty!");
+            if(cart.length === 0) return alert("Cart khali hai!");
+            
+            let total = cart.reduce((s, i) => s + i.price, 0);
+            document.getElementById('cartSummary').innerHTML = `Total Items: ${cart.length}<br><b>Amount to Pay: ₹${total}</b>`;
+            document.getElementById('checkoutModal').style.display = 'flex';
+        }
 
-            // Order Save logic (Local Admin Storage)
-            let orders = JSON.parse(localStorage.getItem('web_orders_log')) || [];
-            const newOrder = {
+        function confirmFinalOrder() {
+            const address = document.getElementById('orderAddress').value;
+            const pay = document.getElementById('paymentMethod').value;
+            const user = localStorage.getItem('web_user');
+
+            if(address.length < 10) return alert("Kripya poora address likhein!");
+
+            let orders = JSON.parse(localStorage.getItem('shree_v3_orders')) || [];
+            orders.push({
+                id: Date.now(),
                 user: user,
                 items: cart.map(i => i.name).join(', '),
-                total: cart.reduce((sum, i) => sum + i.price, 0),
+                total: cart.reduce((s, i) => s + i.price, 0),
+                address: address,
+                payment: pay,
                 time: new Date().toLocaleString()
-            };
-            orders.push(newOrder);
-            localStorage.setItem('web_orders_log', JSON.stringify(orders));
+            });
+            localStorage.setItem('shree_v3_orders', JSON.stringify(orders));
 
-            // Clear Cart & Show Success
             cart = [];
             document.getElementById('count').innerText = "0";
-            document.getElementById('successModal').style.display = 'flex';
+            alert("Order Successful! Hamari team aapse sampark karegi.");
+            location.reload();
         }
 
+        // --- ADMIN & OTHERS ---
         function toggleAdmin() {
             document.getElementById('adminModal').style.display = 'flex';
-            loadOrders();
-        }
-
-        function loadOrders() {
-            const logs = JSON.parse(localStorage.getItem('web_orders_log')) || [];
-            document.getElementById('orderHistory').innerHTML = logs.map(o => `
-                <div class="order-log">
-                    <b>Customer:</b> ${o.user}<br>
-                    <b>Items:</b> ${o.items}<br>
-                    <b>Total:</b> ₹${o.total} | <b>Time:</b> ${o.time}
+            const logs = JSON.parse(localStorage.getItem('shree_v3_orders')) || [];
+            document.getElementById('orderLogs').innerHTML = "<b>Orders:</b><br>" + logs.map(o => `
+                <div style="border-bottom:1px solid #ddd; padding:5px;">
+                    ${o.time}<br>${o.user}<br>Addr: ${o.address}<br>Pay: ${o.payment}<br><b>Items: ${o.items}</b>
                 </div>
             `).reverse().join('');
         }
 
-        // --- PRODUCT & AUTH HELPERS ---
-        function saveNewItem() {
+        function saveItem() {
             const n = document.getElementById('pName').value;
             const p = document.getElementById('pPrice').value;
+            const c = document.getElementById('pCat').value;
             const i = document.getElementById('pImg').value;
             if(!n || !p || !i) return;
-            items.push({ id: Date.now(), name: n, price: p, img: i });
-            localStorage.setItem('web_products', JSON.stringify(items));
+            products.push({name:n, price:parseInt(p), cat:c, img:i});
+            localStorage.setItem('shree_v3_products', JSON.stringify(products));
             location.reload();
         }
 
-        function showLogin() { document.getElementById('loginModal').style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        
-        function addToCart(name, price) {
-            cart.push({name, price});
-            document.getElementById('count').innerText = cart.length;
-        }
-
-        function getOTP() {
-            let phone = "+91" + document.getElementById('uPhone').value;
-            firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier).then(res => {
-                confirmation = res;
-                document.getElementById('phoneStep').style.display = 'none';
-                document.getElementById('otpStep').style.display = 'block';
-            }).catch(err => alert("Error: Use Test Number in Firebase!"));
-        }
-
-        function confirmOTP() {
-            confirmation.confirm(document.getElementById('uOTP').value).then(res => {
-                localStorage.setItem('web_user', res.user.phoneNumber);
-                location.reload();
-            });
-        }
+        function addToCart(n, p) { cart.push({name:n, price:p}); document.getElementById('count').innerText = cart.length; }
+        function updateAuth() { /* Same as before */ const u = localStorage.getItem('web_user'); if(u){ document.getElementById('userDisplay').innerHTML=u.slice(-10); if(u===ADMIN_NO)document.getElementById('adminBtn').style.display='block';} }
+        function showLogin() { document.getElementById('loginModal').style.display='flex'; }
+        function closeModal(id) { document.getElementById(id).style.display='none'; }
+        function getOTP() { /* Firebase logic */ let p = "+91" + document.getElementById('uPhone').value; firebase.auth().signInWithPhoneNumber(p, window.recaptchaVerifier).then(r => { confirmation = r; document.getElementById('phoneStep').style.display='none'; document.getElementById('otpStep').style.display='block'; }); }
+        function confirmOTP() { confirmation.confirm(document.getElementById('uOTP').value).then(r => { localStorage.setItem('web_user', r.user.phoneNumber); location.reload(); }); }
     </script>
 </body>
 </html>
