@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Shree Radhe Tech | Live Store</title>
+    <title>Shree Radhe Tech | Tech Store</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
 
     <style>
         :root { --yellow: #ffdb00; --red: #e63946; --black: #121212; --white: #ffffff; --grey: #f4f4f4; }
@@ -19,14 +18,14 @@
         .logo-text span { color: var(--red); }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; }
-        .box { background: white; padding: 20px; width: 95%; max-width: 450px; border-radius: 12px; position: relative; max-height: 90vh; overflow-y: auto; }
+        .box { background: white; padding: 20px; width: 95%; max-width: 400px; border-radius: 12px; position: relative; }
         
         input, button { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; }
-        .btn-main { background: var(--yellow); color: black; font-weight: bold; border: none; cursor: pointer; }
-        
+        .btn-main { background: var(--yellow); font-weight: bold; border: none; cursor: pointer; }
+
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
         .card { background: white; padding: 10px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .card img { height: 110px; width: 100%; object-fit: contain; border-radius: 5px; }
+        .card img { height: 110px; width: 100%; object-fit: contain; }
 
         .bottom-nav { position: fixed; bottom: 0; width: 100%; background: var(--black); display: flex; justify-content: space-around; padding: 12px; border-top: 2px solid var(--yellow); }
         .nav-icon { color: white; text-align: center; font-size: 11px; cursor: pointer; }
@@ -44,23 +43,35 @@
     <div id="adminModal" class="modal">
         <div class="box">
             <span onclick="toggleAdmin()" style="position:absolute; right:15px; top:10px; font-size:25px; cursor:pointer;">&times;</span>
-            <h3 style="color: var(--red);">Add New Product</h3>
-            <input type="text" id="pName" placeholder="Product Name">
+            <h3>Add Product</h3>
+            <input type="text" id="pName" placeholder="Item Name">
             <input type="number" id="pPrice" placeholder="Price (₹)">
-            <input type="text" id="pImg" placeholder="Paste PostImages Direct Link Here">
-            <button class="btn-main" onclick="uploadToFirebase()">LIVE ON STORE</button>
-            <p style="font-size: 10px; margin-top: 10px; color: grey;">Tip: Go to PostImages.org, upload photo, copy 'Direct Link' and paste here.</p>
+            <input type="text" id="pImg" placeholder="PostImages Direct Link">
+            <button class="btn-main" onclick="addProduct()">ADD TO STORE</button>
+            <button onclick="exportData()" style="font-size:10px; background:none; border:none; color:blue;">Backup Data (Copy this)</button>
         </div>
     </div>
 
-    <div id="profileModal" class="modal"> </div>
-    <div id="loginModal" class="modal"> </div>
+    <div id="loginModal" class="modal">
+        <div class="box">
+            <h2>Login</h2>
+            <div id="phoneStep">
+                <input type="number" id="userPhone" placeholder="Mobile Number">
+                <div id="recaptcha-container"></div>
+                <button class="btn-main" onclick="sendOTP()">SEND OTP</button>
+            </div>
+            <div id="otpStep" style="display:none;">
+                <input type="number" id="otpCode" placeholder="Enter OTP">
+                <button class="btn-main" onclick="verifyOTP()">VERIFY</button>
+            </div>
+        </div>
+    </div>
 
-    <div class="grid" id="pGrid">Loading products...</div>
+    <div class="grid" id="pGrid"></div>
 
     <div class="bottom-nav">
         <div class="nav-icon" onclick="location.reload()">🏠<br>Home</div>
-        <div class="nav-icon" id="accStatus" onclick="handleAccountClick()">👤<br>Account</div>
+        <div id="accStatus" class="nav-icon" onclick="handleAccountClick()">👤<br>Account</div>
         <div class="nav-icon" onclick="sendWhatsApp()">📞<br>Order</div>
     </div>
 
@@ -74,72 +85,63 @@
             appId: "1:759128544690:web:3f57e7ed9117a1acdd80ab"
         };
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const OWNER_NUMBER = "+917052055713";
 
+        const OWNER = "+917052055713";
+        let products = JSON.parse(localStorage.getItem('shree_items')) || [
+            { id: 1, name: "Fast Charger", price: 499, img: "https://m.media-amazon.com/images/I/51fMdfA76rL._AC_UY218_.jpg" }
+        ];
         let cart = [];
+        let confirmationResult;
 
         window.onload = function() {
-            loadProducts();
-            checkLoginStatus();
+            render();
+            checkLogin();
             window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
         };
 
-        // --- DATABASE SE PRODUCT LOAD KARNA ---
-        function loadProducts() {
-            db.collection("products").onSnapshot((querySnapshot) => {
-                let items = [];
-                querySnapshot.forEach((doc) => {
-                    items.push({ id: doc.id, ...doc.data() });
-                });
-                render(items);
-            });
-        }
-
-        function render(items) {
-            if(items.length === 0) {
-                document.getElementById('pGrid').innerHTML = "<p style='grid-column: 1/3;'>Dukan khali hai! Admin panel se product add karein.</p>";
-                return;
-            }
-            document.getElementById('pGrid').innerHTML = items.map(p => `
+        function render() {
+            document.getElementById('pGrid').innerHTML = products.map(p => `
                 <div class="card">
                     <img src="${p.img}">
-                    <p style="font-size:12px; height:32px; margin: 5px 0;">${p.name}</p>
+                    <p style="font-size:12px; margin:5px 0;">${p.name}</p>
                     <p style="color:red; font-weight:bold;">₹${p.price}</p>
-                    <button class="btn-main" style="padding: 5px; font-size: 12px;" onclick="addToCart('${p.name}', ${p.price})">ADD</button>
+                    <button class="btn-main" style="padding:5px;" onclick="addToCart('${p.name}', ${p.price})">ADD</button>
                 </div>
             `).join('');
         }
 
-        // --- ADMIN: DATABASE MEIN PRODUCT DAALNA ---
-        function uploadToFirebase() {
+        function addProduct() {
             const name = document.getElementById('pName').value;
             const price = document.getElementById('pPrice').value;
             const img = document.getElementById('pImg').value;
+            if(!name || !price || !img) return alert("Fill all!");
 
-            if(!name || !price || !img) return alert("Sari jankari bhariye!");
-
-            db.collection("products").add({
-                name: name,
-                price: Number(price),
-                img: img,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                alert("Product dukan par live ho gaya!");
-                toggleAdmin();
-            }).catch(err => alert("Error: " + err.message));
+            products.push({ id: Date.now(), name, price, img });
+            localStorage.setItem('shree_items', JSON.stringify(products));
+            alert("Added!");
+            location.reload();
         }
 
-        // --- BAAKI FUNCTIONS (Login, WhatsApp etc) ---
-        function toggleAdmin() {
-            const m = document.getElementById('adminModal');
-            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
-        }
-
-        function checkLoginStatus() {
+        function checkLogin() {
             const user = localStorage.getItem('user');
-            if(user === OWNER_NUMBER) document.getElementById('adminBtn').style.display = 'block';
-            if(user) document.getElementById('accStatus').innerHTML = `✅<br>Profile`;
+            if(user === OWNER) document.getElementById('adminBtn').style.display = 'block';
+            if(user) document.getElementById('accStatus').innerHTML = "✅<br>Profile";
+        }
+
+        function sendOTP() {
+            let phone = "+91" + document.getElementById('userPhone').value;
+            firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier).then(res => {
+                confirmationResult = res;
+                document.getElementById('phoneStep').style.display = 'none';
+                document.getElementById('otpStep').style.display = 'block';
+            }).catch(err => alert(err.message));
+        }
+
+        function verifyOTP() {
+            confirmationResult.confirm(document.getElementById('otpCode').value).then(res => {
+                localStorage.setItem('user', res.user.phoneNumber);
+                location.reload();
+            });
         }
 
         function addToCart(name, price) {
@@ -149,15 +151,24 @@
 
         function sendWhatsApp() {
             const user = localStorage.getItem('user');
-            if(!user) return alert("Pehle Login karein!");
-            if(cart.length === 0) return alert("Cart khali hai!");
-
-            let msg = `*SHREE RADHE TECH - NEW ORDER*%0A*Customer:* ${user}%0A%0A*Items:*%0A`;
+            if(!user) return document.getElementById('loginModal').style.display='flex';
+            let msg = `*NEW ORDER*%0A*Customer:* ${user}%0A%0A`;
             cart.forEach(i => msg += `- ${i.name} (₹${i.price})%0A`);
-            window.open(`https://wa.me/917052055713?text=${msg}`, '_blank');
+            window.open(`https://wa.me/917052055713?text=${msg}`);
         }
 
-        function handleAccountClick() { /* Same as before */ }
+        function toggleAdmin() {
+            const m = document.getElementById('adminModal');
+            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function handleAccountClick() { if(!localStorage.getItem('user')) document.getElementById('loginModal').style.display='flex'; }
+        
+        function exportData() {
+            const data = localStorage.getItem('shree_items');
+            console.log(data);
+            alert("Data copied to console. Backup this text to keep products safe!");
+        }
     </script>
 </body>
 </html>
